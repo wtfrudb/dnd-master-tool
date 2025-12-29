@@ -19,6 +19,9 @@ function App() {
   const [editingId, setEditingId] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
 
+  const [showTieModal, setShowTieModal] = useState(false);
+  const [tiedEntities, setTiedEntities] = useState([]);
+
   const refreshAllData = useCallback(async () => {
     try {
       const tpls = await getTemplates();
@@ -106,16 +109,13 @@ function App() {
   };
 
   const addFromTemplate = (tpl) => {
-    // 1. Ограничение для игроков (не больше одного)
     if (tpl.type === 'player' && entities.some(e => e.name === tpl.name)) {
       alert(`Игрок ${tpl.name} уже добавлен в битву!`);
       return;
     }
 
-    // 2. Логика нумерации для NPC
     let finalName = tpl.name;
     if (tpl.type === 'npc') {
-      // Считаем, сколько сущностей имеют имя, начинающееся с имени шаблона
       const count = entities.filter(e => e.name.startsWith(tpl.name)).length;
       if (count > 0) {
         finalName = `${tpl.name} ${count + 1}`;
@@ -205,7 +205,6 @@ function App() {
               <div key={ent.id} className={`entity-card ${ent.type === 'npc' && ent.currentHp <= 0 ? 'dead' : ''} ${ent.isCrossed ? 'crossed-out' : ''}`}>
                 <div>
                   <span className={ent.type === 'npc' ? 'npc-label' : 'player-label'}>{ent.name}</span>
-                  {/* Изменено: Инит -> Инициатива */}
                   <div style={{fontSize: '0.8em'}}>Инициатива: <strong>{ent.total || '?'}</strong></div>
                 </div>
                 
@@ -215,12 +214,11 @@ function App() {
                       {ent.total > 0 && (
                         <>
                           HP: <strong>{ent.currentHp}</strong>
-                          {/* Инпут только для вычитания (положительные числа) */}
                           <input type="number" id={`hp-v-${ent.id}`} style={{width: '40px', marginLeft: '5px'}} defaultValue="1" min="1" />
                           <button onClick={() => {
                             const val = Math.abs(parseInt(document.getElementById(`hp-v-${ent.id}`).value)) || 0;
                             const newE = [...entities];
-                            newE[idx].currentHp -= val; // Только вычитание
+                            newE[idx].currentHp -= val; 
                             setEntities(newE);
                           }}>-</button>
                         </>
@@ -238,7 +236,6 @@ function App() {
                     />
                   )}
 
-                  {/* Кнопка смерти/зачеркивания */}
                   <button 
                     onClick={() => {
                       const newE = [...entities];
@@ -259,11 +256,22 @@ function App() {
             <button className="gen-btn" onClick={() => {
               const rolled = entities.map(ent => {
                 if (ent.type === 'npc' || (ent.type === 'player' && !ent.total)) {
-                  return { ...ent, total: (Math.floor(Math.random() * 20) + 1) + ent.initMod };
+                  return { ...ent, total: (Math.floor(Math.random() * 20) + 1) + ent.initMod, tieBreaker: 0 };
                 }
-                return ent;
+                return { ...ent, tieBreaker: 0 };
               });
-              setEntities([...rolled].sort((a, b) => b.total - a.total));
+
+              const totals = rolled.map(e => e.total);
+              const hasTies = totals.some((t, idx) => totals.indexOf(t) !== idx);
+
+              if (hasTies) {
+                const tieGroups = rolled.filter(e => totals.filter(t => t === e.total).length > 1);
+                setTiedEntities(tieGroups);
+                setShowTieModal(true);
+                setEntities(rolled); 
+              } else {
+                setEntities([...rolled].sort((a, b) => b.total - a.total));
+              }
             }}>ГЕНЕРИРОВАТЬ ИНИЦИАТИВУ</button>
           )}
         </div>
@@ -354,6 +362,133 @@ function App() {
               <div>{item.summary}</div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* МОДАЛЬНОЕ ОКНО ДЛЯ РАЗРЕШЕНИЯ СПОРОВ С ГРУППИРОВКОЙ И ПРЕДПРОСМОТРОМ */}
+      {showTieModal && (
+        <div className="modal-overlay">
+          <div className="modal-content" style={{ maxWidth: '700px', display: 'flex', flexDirection: 'row', gap: '20px', alignItems: 'stretch' }}>
+            
+            {/* ЛЕВАЯ ЧАСТЬ: ВВОД ПЕРЕБРОСОВ */}
+            <div style={{ flex: 1, textAlign: 'left' }}>
+              <h3>Спорная инициатива!</h3>
+              <p style={{ fontSize: '0.9em', color: '#666' }}>Введите d20 для разрешения ничьей:</p>
+              
+              <div className="tie-groups-container" style={{ maxHeight: '60vh', overflowY: 'auto' }}>
+                {Object.entries(
+                  tiedEntities.reduce((acc, ent) => {
+                    if (!acc[ent.total]) acc[ent.total] = [];
+                    acc[ent.total].push(ent);
+                    return acc;
+                  }, {})
+                )
+                .sort((a, b) => b[0] - a[0])
+                .map(([total, group]) => (
+                  <div key={total} className="tie-group-block" style={{ marginBottom: '15px', border: '1px solid #eee', borderRadius: '8px', padding: '10px' }}>
+                    <div style={{ fontWeight: 'bold', color: '#e67e22', borderBottom: '1px solid #eee', marginBottom: '10px', fontSize: '0.9em' }}>
+                      Инициатива: {total}
+                    </div>
+                    {group.map(ent => (
+                      <div key={ent.id} className="tie-row" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', alignItems: 'center' }}>
+                        <span style={{ fontSize: '0.85em', fontWeight: '500' }}>{ent.name}</span>
+                        <div className="tie-actions">
+                          {ent.type === 'npc' ? (
+                            <button 
+                              style={{ padding: '4px 10px', fontSize: '0.8em', cursor: 'pointer' }}
+                              onClick={() => {
+                                const newVal = Math.floor(Math.random() * 20) + 1;
+                                setTiedEntities(prev => prev.map(p => p.id === ent.id ? {...p, tieBreaker: newVal} : p));
+                              }}
+                            >
+                              {ent.tieBreaker > 0 ? `🎲 ${ent.tieBreaker}` : 'Бросить'}
+                            </button>
+                          ) : (
+                            <input 
+                              type="number" 
+                              placeholder="d20"
+                              style={{ width: '45px', padding: '3px', textAlign: 'center' }}
+                              value={ent.tieBreaker || ''}
+                              onChange={(e) => {
+                                const val = parseInt(e.target.value) || 0;
+                                setTiedEntities(prev => prev.map(p => p.id === ent.id ? {...p, tieBreaker: val} : p));
+                              }}
+                            />
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* ПРАВАЯ ЧАСТЬ: ЖИВОЙ ПРЕДПРОСМОТР ПОРЯДКА */}
+            <div style={{ width: '220px', background: '#f8f9fa', padding: '15px', borderRadius: '8px', border: '1px solid #ddd', display: 'flex', flexDirection: 'column' }}>
+              <h4 style={{ marginTop: 0, marginBottom: '10px', fontSize: '0.9em', borderBottom: '1px solid #ccc', paddingBottom: '5px' }}>Будущий порядок:</h4>
+              <div style={{ flex: 1, overflowY: 'auto', fontSize: '0.85em' }}>
+                {[...entities].map(ent => {
+                  const tied = tiedEntities.find(t => t.id === ent.id);
+                  return tied ? { ...ent, tieBreaker: tied.tieBreaker } : ent;
+                })
+                .sort((a, b) => {
+                  if (b.total !== a.total) return b.total - a.total;
+                  return b.tieBreaker - a.tieBreaker;
+                })
+                .map((ent, idx) => {
+                  const isCurrentlyTied = tiedEntities.some(t => t.id === ent.id);
+                  return (
+                    <div key={ent.id} style={{ 
+                      padding: '4px 0', 
+                      borderBottom: '1px solid #eee',
+                      color: isCurrentlyTied ? '#e67e22' : '#333',
+                      fontWeight: isCurrentlyTied ? 'bold' : 'normal'
+                    }}>
+                      {idx + 1}. {ent.name} 
+                      <span style={{ float: 'right', color: '#999', fontSize: '0.8em' }}>{ent.total}</span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <button 
+                className="gen-btn" 
+                style={{ marginTop: '15px', width: '100%', padding: '10px', fontSize: '0.85em' }} 
+                onClick={() => {
+                  const updatedAll = entities.map(ent => {
+                    const tied = tiedEntities.find(t => t.id === ent.id);
+                    return tied ? { ...ent, tieBreaker: tied.tieBreaker } : ent;
+                  });
+
+                  // Проверка на повторные ничьи
+                  const stillTied = updatedAll.filter(e1 => 
+                    updatedAll.some(e2 => 
+                      e1.id !== e2.id && 
+                      e1.total === e2.total && 
+                      e1.tieBreaker === e2.tieBreaker &&
+                      e1.tieBreaker !== 0
+                    )
+                  );
+
+                  if (stillTied.length > 0) {
+                    alert("Снова ничья! Перебросьте для тех, у кого совпали дополнительные значения.");
+                    setTiedEntities(stillTied.map(ent => ({ ...ent, tieBreaker: 0 })));
+                    setEntities(updatedAll);
+                  } else {
+                    const finalSorted = [...updatedAll].sort((a, b) => {
+                      if (b.total !== a.total) return b.total - a.total;
+                      return b.tieBreaker - a.tieBreaker;
+                    });
+                    setEntities(finalSorted);
+                    setShowTieModal(false);
+                  }
+                }}
+              >
+                Принять порядок
+              </button>
+            </div>
+
+          </div>
         </div>
       )}
     </div>

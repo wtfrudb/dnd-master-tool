@@ -481,8 +481,260 @@ button { cursor: pointer; border: none; border-radius: 8px; transition: all 0.2s
   border-radius: 6px;
 }
 
+.tie-row:last-child {
+  border-bottom: none;
+}
+
 .tie-actions input {
   width: 50px;
   padding: 5px;
   text-align: center;
+}
+
+/* Кнопка броска для NPC под стиль инпутов */
+.tie-dice-btn {
+  background-color: #ffffff;
+  border: 1px solid #ddd;
+  border-radius: px;
+  color: #333;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tie-dice-btn:hover {
+  background-color: #e67e22;
+  color: white;
+  border-color: #d35400;
+}
+/* Если в App.css еще нет этого правила для mod-input-wide из библиотеки: */
+.mod-input-wide {
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 5px;
+  font-size: 1rem;
+}
+
+/* Базовый стиль для квадратных кнопок действий в строке */
+.death-btn, .delete-row-btn {
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background-color: #fff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 1.1em;
+  padding: 0;
+}
+
+/* Эффект наведения для обеих кнопок */
+.death-btn:hover, .delete-row-btn:hover {
+  border-color: #e67e22;
+  background-color: #fffaf5;
+}
+
+/* Состояние "Смерть активна" */
+.death-btn.active {
+  background-color: #333;
+  border-color: #000;
+  filter: grayscale(0);
+  opacity: 1;
+}
+
+/* Кнопка удаления специфично */
+.delete-row-btn:hover {
+  color: #e74c3c; /* Красный крестик при наведении */
+  border-color: #e74c3c;
+  background-color: #fdf2f2;
+}
+
+/* Единый стиль для инпутов внутри карточек боя */
+.battle-input-styled {
+  height: 34px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background-color: #fff;
+  text-align: center;
+  font-weight: 600;
+  transition: all 0.2s;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.battle-input-styled:hover, .battle-input-styled:focus {
+  border-color: #e67e22;
+}
+
+/* Стилизация текстовых меток HP */
+.hp-label-text {
+  font-size: 0.85em;
+  font-weight: bold;
+  color: #555;
+  margin-right: 4px;
+}
+
+/* Кнопка минус для HP (квадратная, как и остальные) */
+.hp-minus-btn-styled {
+  width: 34px;
+  height: 34px;
+  background-color: #fff;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+  color: #c0392b;
+  font-weight: bold;
+  transition: all 0.2s;
+}
+
+.hp-minus-btn-styled:hover {
+  background-color: #fdf2f2;
+  border-color: #e74c3c;
+}
+
+.battle-input-styled:focus {
+  border-color: #e67e22;
+  background-color: #fffef0;
+}
+
+/* Стилизация блока HP для NPC */
+.hp-badge {
+  display: flex;
+  align-items: center;
+  background: #f8f9fa;
+  border: 1px solid #eee;
+  border-radius: 4px;
+  padding-left: 8px;
+  height: 34px;
+  gap: 5px;
+  font-size: 0.9em;
+  color: #666;
+}
+
+.hp-badge strong {
+  color: #c0392b; /* Выделяем текущее здоровье красным */
+  margin-right: 5px;
+}
+
+/* Контейнер для правой части карточки */
+.card-controls-right {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end; /* Прижимает всё к правому краю */
+  gap: 15px; /* Расстояние между блоком HP и кнопками удаления */
+  flex: 1;
+}
+
+/* Группа HP: Текст -> Инпут -> Минус -> Плюс */
+.hp-control-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Инпут урона/лечения */
+.hp-input-small {
+  width: 40px;
+  height: 34px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  text-align: center;
+  font-weight: bold;
+  outline: none;
+}
+
+.hp-input-small:focus {
+  border-color: #e67e22;
+}
+
+/* Кнопка плюса */
+.hp-plus-btn-styled {
+  width: 34px;
+  height: 34px;
+  background-color: #fff;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+  color: #27ae60;
+  font-weight: bold;
+  transition: all 0.2s;
+}
+
+.hp-plus-btn-styled:hover {
+  background-color: #f2fdf5;
+  border-color: #2ecc71;
+}
+
+/* Заголовки секций */
+.section-title {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: #2c3e50;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin: 20px 0 15px 0;
+  border-bottom: 2px solid #e67e22;
+  display: inline-block;
+  padding-bottom: 3px;
+}
+
+/* Подзаголовки (Игроки / NPC) */
+.subsection-label {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #7f8c8d;
+  margin-bottom: 8px;
+  display: block;
+}
+
+/* Контейнер для нижних кнопок */
+.bottom-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+/* Кнопка Очистить (Красная/Сдержанная) */
+.clear-btn {
+  flex: 1;
+  padding: 12px;
+  background-color: #fff;
+  border: 1px solid #e74c3c;
+  color: #e74c3c;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.clear-btn:hover {
+  background-color: #e74c3c;
+  color: #fff;
+}
+
+/* Кнопка Завершить (Темная/Солидная) */
+.finish-btn {
+  flex: 2;
+  padding: 12px;
+  background-color: #2c3e50;
+  border: none;
+  color: #fff;
+  border-radius: 6px;
+  font-weight: bold;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.finish-btn:hover {
+  background-color: #34495e;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
+
+.entity-card.selected {
+  background-color: #e3f2fd; /* Светло-голубой */
+  border: 2px solid #2196f3;
 }

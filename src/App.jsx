@@ -22,6 +22,10 @@ function App() {
   const [showTieModal, setShowTieModal] = useState(false);
   const [tiedEntities, setTiedEntities] = useState([]);
 
+  const [isBattleStarted, setIsBattleStarted] = useState(false);
+
+  const [selectedEntityId, setSelectedEntityId] = useState(null);
+
   const refreshAllData = useCallback(async () => {
     try {
       const tpls = await getTemplates();
@@ -29,6 +33,16 @@ function App() {
       setTemplates(tpls || []);
       setHistory(hist || []);
     } catch (err) { console.error(err); }
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        setSelectedEntityId(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
   useEffect(() => {
@@ -167,11 +181,12 @@ function App() {
       {activeTab === 'combat' ? (
         <div className="combat-screen">
           <div className="setup-section">
-            <h4 className="setup-title">Добавить в бой:</h4>
+            {/* Стилизованный заголовок */}
+            <h2 className="section-title">Добавить в бой</h2>
             
             <div className="quick-add-grid">
               <div className="add-group">
-                <span className="add-group-label players">Игроки</span>
+                <span className="subsection-label">Игроки</span>
                 <div className="add-buttons-container">
                   {templates.filter(t => t.type === 'player').sort((a,b) => a.name.localeCompare(b.name)).map(t => (
                     <button key={t.id} onClick={() => addFromTemplate(t)} className="btn-add-player">+{t.name}</button>
@@ -180,7 +195,7 @@ function App() {
               </div>
 
               <div className="add-group">
-                <span className="add-group-label npcs">NPC</span>
+                <span className="subsection-label">NPC / Монстры</span>
                 <div className="add-buttons-container">
                   {templates.filter(t => t.type === 'npc').sort((a,b) => a.name.localeCompare(b.name)).map(t => (
                     <button key={t.id} onClick={() => addFromTemplate(t)} className="btn-add-npc">+{t.name}</button>
@@ -189,71 +204,140 @@ function App() {
               </div>
             </div>
 
-            <div className="setup-actions">
-              <button onClick={async () => {
-                const summary = entities.map(e => `${e.name}`).join(', ');
-                await archiveBattle(`Бой завершен: ${summary}`);
-                setEntities([]);
-                refreshAllData();
-              }} className="btn-finish">Завершить бой</button>
-              <button onClick={() => setEntities([])} className="btn-clear">Очистить список</button>
-            </div>
+            {/* Стилизованные нижние кнопки управления */}
+            {entities.length > 0 && (
+              <div className="bottom-actions">
+                <button 
+                  className="clear-btn" 
+                  onClick={() => {
+                    setIsBattleStarted(false);
+                    if (window.confirm("Очистить список текущего боя?")) setEntities([]);
+                  }}
+                >
+                  Очистить список
+                </button>
+                
+                <button 
+                  className="finish-btn"
+                  onClick={async () => {
+                    setIsBattleStarted(false);
+                    if (window.confirm("Завершить бой и сохранить в историю?")) {
+                      const summary = entities.map(e => `${e.name}`).join(', ');
+                      await archiveBattle(`Бой завершен: ${summary}`);
+                      setEntities([]);
+                      refreshAllData();
+                    }
+                  }}
+                >
+                  Завершить бой
+                </button>
+              </div>
+            )}
           </div>
+          
+          
 
           <div className="battle-list">
             {entities.map((ent, idx) => (
-              <div key={ent.id} className={`entity-card ${ent.type === 'npc' && ent.currentHp <= 0 ? 'dead' : ''} ${ent.isCrossed ? 'crossed-out' : ''}`}>
-                <div>
+              <div key={ent.id} onClick={() => setSelectedEntityId(ent.id)} className={`entity-card ${ent.type === 'npc' && ent.currentHp <= 0 ? 'dead' : ''} ${ent.isCrossed ? 'crossed-out' : ''} ${selectedEntityId === ent.id ? 'selected' : ''}`} style={{ cursor: 'pointer' }}>                {/* Левая часть: Имя */}
+                <div style={{ flexShrink: 0 }}>
                   <span className={ent.type === 'npc' ? 'npc-label' : 'player-label'}>{ent.name}</span>
-                  <div style={{fontSize: '0.8em'}}>Инициатива: <strong>{ent.total || '?'}</strong></div>
+                  <div style={{fontSize: '0.8em', color: '#666'}}>Инициатива: <strong>{ent.total || '?'}</strong></div>
                 </div>
                 
-                <div style={{display: 'flex', gap: '10px', alignItems: 'center'}}>
-                  {ent.type === 'npc' && (
-                    <div className="hp-section">
-                      {ent.total > 0 && (
-                        <>
-                          HP: <strong>{ent.currentHp}</strong>
-                          <input type="number" id={`hp-v-${ent.id}`} style={{width: '40px', marginLeft: '5px'}} defaultValue="1" min="1" />
-                          <button onClick={() => {
-                            const val = Math.abs(parseInt(document.getElementById(`hp-v-${ent.id}`).value)) || 0;
-                            const newE = [...entities];
-                            newE[idx].currentHp -= val; 
-                            setEntities(newE);
-                          }}>-</button>
-                        </>
-                      )}
+                {/* Правая часть: Все контроли */}
+                <div className="card-controls-right">
+                  
+                  {/* Секция HP для NPC */}
+                  {ent.type === 'npc' && ent.total > 0 && (
+                    <div className="hp-control-group">
+                      <span className="hp-label-text" style={{ minWidth: '55px' }}>
+                        HP: <span style={{color: '#c0392b'}}>{ent.currentHp}</span>
+                      </span>
+                      <button 
+                        className="hp-minus-btn-styled"
+                        onClick={() => {
+                          const val = Math.abs(parseInt(document.getElementById(`hp-v-${ent.id}`).value)) || 0;
+                          const newE = [...entities];
+                          newE[idx].currentHp -= val; 
+                          setEntities(newE);
+                        }}
+                      > − </button>
+                      <input 
+                        type="number" 
+                        id={`hp-v-${ent.id}`} 
+                        className="battle-input-styled" 
+                        style={{width: '40px'}} 
+                        defaultValue="1" 
+                      />
+                      <button 
+                        className="hp-plus-btn-styled"
+                        onClick={() => {
+                          const val = Math.abs(parseInt(document.getElementById(`hp-v-${ent.id}`).value)) || 0;
+                          const newE = [...entities];
+                          newE[idx].currentHp += val; 
+                          setEntities(newE);
+                        }}
+                      > + </button>
                     </div>
                   )}
                   
+                  {/* Секция Инициативы для Игрока */}
                   {ent.type === 'player' && (
-                    <input type="number" placeholder="Инициатива" style={{width: '60px'}} value={ent.total || ''}
-                      onChange={e => {
-                        const newE = [...entities];
-                        newE[idx].total = parseInt(e.target.value) || 0;
-                        setEntities(newE);
-                      }} 
-                    />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      {!isBattleStarted ? (
+                        <>
+                          <span className="hp-label-text">Инициатива:</span>
+                          <input 
+                            type="number" 
+                            className="battle-input-styled" 
+                            style={{ width: '55px' }} 
+                            placeholder="🎲"
+                            value={ent.total || ''}
+                            onChange={e => {
+                              const newE = [...entities];
+                              newE[idx].total = parseInt(e.target.value) || 0;
+                              setEntities(newE);
+                            }} 
+                          />
+                        </>
+                      ) : (
+                        // После нажатмя "Генерировать" поле исчезает, остается только число слева
+                        <div style={{ width: '0px' }}></div> 
+                      )}
+                    </div>
                   )}
 
-                  <button 
-                    onClick={() => {
-                      const newE = [...entities];
-                      newE[idx].isCrossed = !newE[idx].isCrossed;
-                      setEntities(newE);
-                    }}
-                    className={`death-btn ${ent.isCrossed ? 'active' : ''}`}
-                  >
-                    💀
-                  </button>
-
-                  <button onClick={() => setEntities(entities.filter(e => e.id !== ent.id))}>❌</button>
+                  {/* Группа кнопок управления (Смерть и Удаление) */}
+                  <div style={{ display: 'flex', gap: '5px' }}>
+                    <button 
+                      onClick={() => {
+                        const newE = [...entities];
+                        newE[idx].isCrossed = !newE[idx].isCrossed;
+                        setEntities(newE);
+                      }}
+                      className={`death-btn ${ent.isCrossed ? 'active' : ''}`}
+                    >
+                      💀
+                    </button>
+                    <button 
+                      className="delete-row-btn"
+                      onClick={() => {
+                        if (window.confirm(`Удалить ${ent.name}?`)) {
+                          setEntities(entities.filter(e => e.id !== ent.id));
+                        }
+                      }}
+                    >
+                      ✕
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
           </div>
           {entities.length > 0 && (
             <button className="gen-btn" onClick={() => {
+              setIsBattleStarted(true);
               const rolled = entities.map(ent => {
                 if (ent.type === 'npc' || (ent.type === 'player' && !ent.total)) {
                   return { ...ent, total: (Math.floor(Math.random() * 20) + 1) + ent.initMod, tieBreaker: 0 };
@@ -394,29 +478,54 @@ function App() {
                         <span style={{ fontSize: '0.85em', fontWeight: '500' }}>{ent.name}</span>
                         <div className="tie-actions">
                           {ent.type === 'npc' ? (
-                            <button 
-                              className="tie-dice-btn"
-                              onClick={() => {
-                                const newVal = Math.floor(Math.random() * 20) + 1;
-                                setTiedEntities(prev => prev.map(p => p.id === ent.id ? {...p, tieBreaker: newVal} : p));
-                              }}
-                            >
-                              {ent.tieBreaker > 0 ? `🎲 ${ent.tieBreaker}` : 'Бросить'}
-                            </button>
-                          ) : (
-                            <div className="tie-input-wrapper">
-                              <span className="tie-input-icon">🎲</span>
-                              <input 
-                                type="number" 
-                                placeholder="d20"
-                                className="tie-d20-input"
-                                value={ent.tieBreaker || ''}
-                                onChange={(e) => {
-                                  const val = parseInt(e.target.value) || 0;
-                                  setTiedEntities(prev => prev.map(p => p.id === ent.id ? {...p, tieBreaker: val} : p));
+                            <div className="input-field mod-field" style={{ margin: 0 }}>
+                              <button 
+                                className="tie-dice-btn"
+                                style={{ 
+                                  height: '38px', 
+                                  width: '100%', 
+                                  minWidth: '90px', 
+                                  display: 'flex', 
+                                  alignItems: 'center', 
+                                  justifyContent: 'center',
+                                  gap: '5px' 
                                 }}
-                                onFocus={(e) => e.target.select()} // Удобно: сразу выделяет текст при клике
-                              />
+                                onClick={() => {
+                                  const newVal = Math.floor(Math.random() * 20) + 1;
+                                  setTiedEntities(prev => prev.map(p => p.id === ent.id ? {...p, tieBreaker: newVal} : p));
+                                }}
+                              >
+                                {ent.tieBreaker > 0 ? `🎲 ${ent.tieBreaker}` : 'Бросить d20'}
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="input-field mod-field" style={{ margin: 0 }}>
+                              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                                <span style={{ 
+                                  position: 'absolute', 
+                                  left: '10px', 
+                                  pointerEvents: 'none', 
+                                  fontSize: '0.9em', 
+                                  opacity: 0.7 
+                                }}>🎲</span>
+                                <input 
+                                  type="number" 
+                                  className="mod-input-wide" 
+                                  placeholder="d20"
+                                  style={{ 
+                                    width: '100px', 
+                                    height: '38px', 
+                                    paddingLeft: '30px', // Отступ под иконку кубика
+                                    textAlign: 'center' 
+                                  }}
+                                  value={ent.tieBreaker || ''}
+                                  onChange={(e) => {
+                                    const val = parseInt(e.target.value) || 0;
+                                    setTiedEntities(prev => prev.map(p => p.id === ent.id ? {...p, tieBreaker: val} : p));
+                                  }}
+                                  onFocus={(e) => e.target.select()}
+                                />
+                              </div>
                             </div>
                           )}
                         </div>

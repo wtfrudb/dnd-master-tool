@@ -3,38 +3,57 @@
   box-sizing: border-box;
 }
 
-.container { 
-  padding: 20px; 
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-  max-width: 1000px; 
-  margin: 0 auto; 
-  background-color: #f0f2f5;
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #CAFFB9;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   min-height: 100vh;
+  overflow-x: hidden; /* Защита от вылетания элементов за край */
+}
+
+.container { 
+  padding: 30px; 
+  width: 85%; /* На больших экранах */
+  max-width: 1400px; 
+  margin: 0 auto; 
+  background-color: transparent; 
   color: #333;
+}
+
+/* Адаптивные "ушки" для маленьких экранов */
+@media (max-width: 768px) {
+  .container {
+    width: 95%;
+    padding: 15px;
+  }
 }
 
 /* --- ВКЛАДКИ --- */
 .tabs {
   display: flex;
-  gap: 10px;
-  margin-bottom: 20px;
+  justify-content: center;
+  gap: 15px;
+  margin-bottom: 30px;
+  border-bottom: 2px solid rgba(0,0,0,0.1);
 }
 
 .tab-btn {
-  background: #bdc3c7;
+  background: rgba(255, 255, 255, 0.5);
   color: #2c3e50;
   border: none;
-  padding: 12px 25px;
-  border-radius: 8px 8px 0 0;
+  padding: 12px 30px;
+  border-radius: 10px 10px 0 0;
   font-weight: bold;
   cursor: pointer;
   transition: all 0.3s;
+  margin-bottom: -2px;
 }
 
 .tab-btn.active {
-  background: #3498db;
-  color: white;
-  box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+  background: #ffffff;
+  color: #27ae60;
+  box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
 }
 
 /* --- ФОРМА В БИБЛИОТЕКЕ --- */
@@ -42,21 +61,23 @@
   background: #ffffff; 
   padding: 20px; 
   border-radius: 12px; 
-  margin-bottom: 20px; 
-  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  margin-bottom: 25px; 
+  box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+  width: 100%; /* Подложка всегда под всей формой */
 }
 
 .library-form-row {
   display: flex;
-  align-items: flex-start; /* Изменено на flex-start, чтобы лейблы были в ряд */
-  gap: 12px;
-  flex-wrap: nowrap;
+  align-items: flex-end; /* Выравнивание по нижней линии полей */
+  gap: 15px;
+  flex-wrap: wrap; /* Если не влезает — переносится на новую строку */
 }
 
 .input-field {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  transition: all 0.3s ease; /* Плавность для всех полей */
 }
 
 .input-field label {
@@ -64,150 +85,258 @@
   font-weight: bold;
   color: #7f8c8d;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  /* ПУНКТ 1: Сдвигаем надписи чуть правее относительно поля */
+  margin-left: 2px; 
 }
 
 .input-field input {
   padding: 8px 12px;
-  border: 1px solid #ccc;
+  border: 1px solid #ddd;
   border-radius: 6px;
-  height: 38px;
+  height: 40px;
   font-size: 14px;
   width: 100%;
 }
 
-.name-field { width: 220px; }
-.mod-field { width: 100px; } /* Чуть сузили */
+/* Настройки ширины полей */
+.name-field { 
+  flex: 2 1 250px; 
+  max-width: 500px; /* Ограничение, чтобы не скакало слишком сильно */
+}
+
+.mod-field { 
+  width: 100px; 
+  flex: 0 0 100px; 
+}
+
 .hp-field { 
   width: 90px; 
-  min-height: 60px; /* КРИТИЧНО: Резервирует место, чтобы форма не прыгала */
+  flex: 0 0 90px;
+  min-height: 40px; /* Исправлено: убрана лишняя высота, ломавшая выравнивание */
 }
-.checkbox-field { width: 100px; }
+
+/* ПУНКТ 2: Флажок NPC зафиксирован небольшого размера */
+.checkbox-field { 
+  width: 100px; 
+  flex: 0 0 100px;
+}
 
 .checkbox-aligner {
   display: flex;
   align-items: center;
+  justify-content: center; /* Центровка текста и галочки */
   gap: 8px;
-  height: 38px; 
+  height: 40px; 
   background: #ffffff;
   padding: 0 10px;
   border-radius: 6px;
-  border: 1px solid #ccc;
+  border: 1px solid #ddd;
+
+  /* --- НАСТРОЙКИ ТЕКСТА NPC --- */
+  font-size: 14px;          /* 2. Размер шрифта */
+  font-weight: normal;        /* 3. Жирность (ширина) текста: от 100 до 900 */
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* 4. Шрифт */
+  text-transform: uppercase; /* Сделать все буквы заглавными (опционально) */
+  letter-spacing: 0px;      /* Расстояние между буквами (регулировка ширины слова) */
+  /*font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-weight: normal;*/
+}
+
+.checkbox-aligner input[type="checkbox"] {
+  width: 16px; /* Фикс небольшой размер */
+  height: 16px;
+  margin: 0;
+  flex-shrink: 0;
 }
 
 .action-buttons {
   display: flex;
-  flex-direction: column; /* Кнопки Сохранить/Отмена тоже в колонку для экономии места */
-  gap: 4px;
+  flex-direction: row; /* Кнопки в ряд */
+  gap: 8px;
+  height: 40px; /* Фиксируем высоту для выравнивания */
+  align-items: center;
 }
 
 .main-action-btn, .cancel-btn {
-  height: 38px;
-  font-weight: bold;
-  padding: 0 15px;
-  font-size: 12px;
+  height: 40px;
+  padding: 0 20px;
+  font-size: 14px;
+  white-space: nowrap;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
-.main-action-btn { background: #3498db; color: white; }
-.main-action-btn:disabled { background: #bdc3c7; cursor: not-allowed; }
+.main-action-btn { background: #27ae60; color: white; }
+.main-action-btn:disabled { background: #bdc3c7; }
 .cancel-btn { background: #95a5a6; color: white; }
 
-/* --- РАЗДЕЛЕНИЕ ГРУПП В БИБЛИОТЕКЕ --- */
+/* --- ГРУППИРОВКА --- */
 .library-group {
-  margin-bottom: 30px;
+  margin-bottom: 35px;
 }
 
 .group-label {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 800;
-  padding: 6px 12px;
-  border-radius: 4px;
-  margin-bottom: 15px;
+  padding: 8px 16px;
+  border-radius: 6px;
+  margin-bottom: 20px;
   display: inline-block;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  background: white;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
 }
 
-/* Изменили названия и цвета согласно логике Игроки/NPC */
-.player-label-bg { background: #e3f2fd; color: #1976d2; border: 1px solid #bbdefb; }
-.npc-label-bg { background: #f5f5f5; color: #616161; border: 1px solid #e0e0e0; }
+.player-label-bg { color: #1976d2; border: 1px solid #bbdefb; }
+.npc-label-bg { color: #616161; border: 1px solid #e0e0e0; }
 
 /* --- СЕТКА КАРТОЧЕК --- */
 .template-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); 
-  gap: 15px;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); 
+  gap: 20px;
 }
 
 .template-card {
   background: white;
-  padding: 12px 15px;
-  border-radius: 10px;
-  border-left: 5px solid #3498db; 
-  box-shadow: 0 2px 5px rgba(0,0,0,0.08);
+  padding: 15px;
+  border-radius: 12px;
+  border-left: 6px solid #3498db; 
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
 }
 
 .template-card.npc {
-  border-left-color: #95a5a6; /* Нейтральный цвет для NPC */
+  border-left-color: #95a5a6; 
 }
 
-/* Внутренняя структура карточки для вертикальных кнопок */
 .tpl-card-main-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 12px;
+  gap: 15px;
 }
 
 .tpl-info {
   flex: 1;
 }
 
-.tpl-card-stats {
-  font-size: 13px;
-  color: #7f8c8d;
-  margin-top: 4px;
+.tpl-name strong {
+  font-size: 18px;
+  color: #2c3e50;
 }
 
-/* Колонка кнопок справа */
+.tpl-card-stats {
+  font-size: 14px;
+  color: #7f8c8d;
+  margin-top: 5px;
+}
+
 .tpl-actions-column {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  min-width: 110px;
+  gap: 6px;
+  min-width: 125px;
 }
 
 .row-edit-btn, .row-del-btn {
   width: 100%;
-  padding: 6px 4px;
-  font-size: 10px;
-  font-weight: bold;
-  text-transform: uppercase;
-  text-align: center;
+  padding: 8px 5px;
+  font-size: 14px;
 }
 
 .row-edit-btn { background: #f1c40f; color: #333; }
 .row-del-btn { background: #e74c3c; color: white; }
 
-/* --- СПИСОК БОЯ --- */
+/* --- СТАТУС РЕДАКТИРОВАНИЯ --- */
+.edit-status {
+  font-size: 14px;
+  font-weight: bold;
+  color: #f39c12;      /* Оранжевый цвет, чтобы выделялось */
+  margin-bottom: 20px; /* Увеличиваем расстояние до полей формы */
+  padding-left: 8px;   /* Выравниваем текст по одной линии с label (у них margin-left: 8px) */
+  text-transform: uppercase;
+  border-left: 4px solid #f39c12; /* Добавим полоску слева для акцента */
+  padding-top: 5px;
+  padding-bottom: 5px;
+}
+
+/* --- БИТВА --- */
 .entity-card { 
   display: flex; 
   justify-content: space-between; 
   align-items: center;
-  padding: 15px; 
+  padding: 18px; 
   background: white;
-  border: 1px solid #eee; 
-  margin-bottom: 10px; 
-  border-radius: 8px;
+  margin-bottom: 12px; 
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 }
 
 .npc-label { color: #616161; font-weight: bold; }
 .player-label { color: #1976d2; font-weight: bold; }
 
-button { cursor: pointer; border: none; border-radius: 6px; transition: all 0.2s; }
-button:active { transform: translateY(1px); }
+button { cursor: pointer; border: none; border-radius: 8px; transition: all 0.2s; }
 
 .gen-btn { 
-  background: #27ae60; color: white; width: 100%; 
-  margin-top: 20px; padding: 15px; font-weight: bold; 
+  background: #219150; 
+  color: white; 
+  width: 100%; 
+  margin-top: 25px; 
+  padding: 18px; 
+  font-weight: bold;
+  font-size: 1.1em;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+/* --- СТИЛИ ПОИСКА --- */
+.search-container {
+  margin-bottom: 25px;
+  display: flex;
+  justify-content: flex-start;
+}
+
+.search-wrapper {
+  position: relative;
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  align-items: center;
+}
+
+.search-icon {
+  position: absolute;
+  left: 12px;
+  font-size: 16px;
+  color: #7f8c8d;
+  pointer-events: none;
+}
+
+.search-input {
+  width: 100%;
+  padding: 10px 40px 10px 40px;
+  border: 2px solid #ddd;
+  border-radius: 20px;
+  font-size: 14px;
+  outline: none;
+  transition: all 0.3s;
+  background: white;
+}
+
+.search-input:focus {
+  border-color: #27ae60;
+  box-shadow: 0 0 8px rgba(39, 174, 96, 0.1);
+}
+
+.search-clear {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  color: #bdc3c7;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 5px;
+}
+
+.search-clear:hover {
+  color: #7f8c8d;
 }

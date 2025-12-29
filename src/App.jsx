@@ -18,6 +18,9 @@ function App() {
   const [isNpc, setIsNpc] = useState(true);
   const [editingId, setEditingId] = useState(null);
 
+  // НОВОЕ: Состояние для поиска
+  const [searchQuery, setSearchQuery] = useState('');
+
   const refreshAllData = useCallback(async () => {
     try {
       const tpls = await getTemplates();
@@ -53,13 +56,23 @@ function App() {
   }, [entities, isLoaded]);
 
   const handleSaveOrUpdate = async () => {
-    // Валидация: имя не пустое, HP и Mod заполнены (не пустые строки)
-    if (!name.trim() || mod === '' || (isNpc && hp === '')) return;
+    const hpValue = parseInt(hp);
+    const trimmedName = name.trim();
+    if (!trimmedName || mod === '' || (isNpc && (isNaN(hpValue) || hpValue <= 0))) return;
+
+    const isDuplicate = templates.some(tpl => 
+      tpl.name.toLowerCase() === trimmedName.toLowerCase() && tpl.id !== editingId
+    );
+
+    if (isDuplicate) {
+      alert(`Персонаж с именем "${trimmedName}" уже существует в библиотеке!`);
+      return;
+    }
     
     const data = { 
-      name: name.trim(), 
+      name: trimmedName, 
       type: isNpc ? 'npc' : 'player', 
-      baseHp: parseInt(hp) || 0, 
+      baseHp: hpValue || 0, 
       initMod: parseInt(mod) || 0 
     };
     
@@ -88,6 +101,12 @@ function App() {
     setName(''); setMod('0'); setHp('10');
   };
 
+  const confirmDelete = (tpl) => {
+    if (window.confirm(`Удалить персонажа "${tpl.name}" из библиотеки?`)) {
+      deleteTemplate(tpl.id).then(refreshAllData);
+    }
+  };
+
   const addFromTemplate = (tpl) => {
     setEntities(prev => [...prev, {
       id: Math.random().toString(36).substr(2, 9),
@@ -109,13 +128,17 @@ function App() {
             {tpl.type === 'npc' && <span> | HP: <strong>{tpl.base_hp}</strong></span>}
           </div>
         </div>
-        
         <div className="tpl-actions-column">
           <button onClick={() => startEdit(tpl)} className="row-edit-btn">Редактировать</button>
-          <button onClick={() => deleteTemplate(tpl.id).then(refreshAllData)} className="row-del-btn">Удалить</button>
+          <button onClick={() => confirmDelete(tpl)} className="row-del-btn">Удалить</button>
         </div>
       </div>
     </div>
+  );
+
+  // НОВОЕ: Фильтрация шаблонов на основе поиска
+  const filteredTemplates = templates.filter(t => 
+    t.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   if (!isLoaded) return <div className="container">Загрузка...</div>;
@@ -207,12 +230,7 @@ function App() {
 
               <div className="input-field mod-field">
                 <label>Модификатор</label>
-                <input 
-                  type="number" 
-                  className="mod-input-wide" 
-                  value={mod} 
-                  onChange={e => setMod(e.target.value)} 
-                />
+                <input type="number" className="mod-input-wide" value={mod} onChange={e => setMod(e.target.value)} />
               </div>
 
               <div className="input-field checkbox-field">
@@ -223,34 +241,42 @@ function App() {
                 </div>
               </div>
 
-              {/* Поле HP теперь в фиксированном контейнере, чтобы не скакала верстка */}
               <div className="input-field hp-field">
                 {isNpc && (
                   <>
                     <label>HP</label>
-                    <input 
-                      type="number" 
-                      className="hp-input-field" 
-                      value={hp} 
-                      onChange={e => setHp(e.target.value)} 
-                    />
+                    <input type="number" className="hp-input-field" value={hp} onChange={e => setHp(e.target.value)} />
                   </>
                 )}
               </div>
 
-              <div className="input-field action-buttons">
-                <label>&nbsp;</label>
-                <div style={{display: 'flex', gap: '8px'}}>
-                  <button 
-                    onClick={handleSaveOrUpdate} 
-                    className="main-action-btn"
-                    disabled={!name.trim() || mod === '' || (isNpc && hp === '')}
-                  >
-                    {editingId ? 'Обновить' : 'Сохранить'}
-                  </button>
-                  {editingId && <button onClick={cancelEdit} className="cancel-btn">Отмена</button>}
-                </div>
+              <div className="action-buttons">
+                <button 
+                  onClick={handleSaveOrUpdate} 
+                  className="main-action-btn"
+                  disabled={!name.trim() || mod === '' || (isNpc && (!hp || parseInt(hp) <= 0))}
+                >
+                  {editingId ? 'Обновить' : 'Сохранить'}
+                </button>
+                {editingId && <button onClick={cancelEdit} className="cancel-btn">Отмена</button>}
               </div>
+            </div>
+          </div>
+
+          {/* НОВОЕ: Блок поиска */}
+          <div className="search-container">
+            <div className="search-wrapper">
+              <span className="search-icon">🔍</span>
+              <input 
+                type="text" 
+                className="search-input" 
+                placeholder="Поиск персонажа по имени..." 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              {searchQuery && (
+                <button className="search-clear" onClick={() => setSearchQuery('')}>✕</button>
+              )}
             </div>
           </div>
           
@@ -258,7 +284,7 @@ function App() {
             <div className="library-group">
               <h3 className="group-label player-label-bg">Игроки</h3>
               <div className="template-grid">
-                {templates
+                {filteredTemplates
                   .filter(t => t.type === 'player')
                   .sort((a, b) => a.name.localeCompare(b.name))
                   .map(tpl => renderTemplateCard(tpl))}
@@ -268,7 +294,7 @@ function App() {
             <div className="library-group">
               <h3 className="group-label npc-label-bg">NPC</h3>
               <div className="template-grid">
-                {templates
+                {filteredTemplates
                   .filter(t => t.type === 'npc')
                   .sort((a, b) => a.name.localeCompare(b.name))
                   .map(tpl => renderTemplateCard(tpl))}

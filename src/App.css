@@ -1,0 +1,213 @@
+/* Глобальный сброс */
+* {
+  box-sizing: border-box;
+}
+
+.container { 
+  padding: 20px; 
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+  max-width: 1000px; 
+  margin: 0 auto; 
+  background-color: #f0f2f5;
+  min-height: 100vh;
+  color: #333;
+}
+
+/* --- ВКЛАДКИ --- */
+.tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.tab-btn {
+  background: #bdc3c7;
+  color: #2c3e50;
+  border: none;
+  padding: 12px 25px;
+  border-radius: 8px 8px 0 0;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.tab-btn.active {
+  background: #3498db;
+  color: white;
+  box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+}
+
+/* --- ФОРМА В БИБЛИОТЕКЕ --- */
+.library-form-container {
+  background: #ffffff; 
+  padding: 20px; 
+  border-radius: 12px; 
+  margin-bottom: 20px; 
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.library-form-row {
+  display: flex;
+  align-items: flex-start; /* Изменено на flex-start, чтобы лейблы были в ряд */
+  gap: 12px;
+  flex-wrap: nowrap;
+}
+
+.input-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.input-field label {
+  font-size: 11px;
+  font-weight: bold;
+  color: #7f8c8d;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.input-field input {
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  height: 38px;
+  font-size: 14px;
+  width: 100%;
+}
+
+.name-field { width: 220px; }
+.mod-field { width: 100px; } /* Чуть сузили */
+.hp-field { 
+  width: 90px; 
+  min-height: 60px; /* КРИТИЧНО: Резервирует место, чтобы форма не прыгала */
+}
+.checkbox-field { width: 100px; }
+
+.checkbox-aligner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 38px; 
+  background: #ffffff;
+  padding: 0 10px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+.action-buttons {
+  display: flex;
+  flex-direction: column; /* Кнопки Сохранить/Отмена тоже в колонку для экономии места */
+  gap: 4px;
+}
+
+.main-action-btn, .cancel-btn {
+  height: 38px;
+  font-weight: bold;
+  padding: 0 15px;
+  font-size: 12px;
+}
+
+.main-action-btn { background: #3498db; color: white; }
+.main-action-btn:disabled { background: #bdc3c7; cursor: not-allowed; }
+.cancel-btn { background: #95a5a6; color: white; }
+
+/* --- РАЗДЕЛЕНИЕ ГРУПП В БИБЛИОТЕКЕ --- */
+.library-group {
+  margin-bottom: 30px;
+}
+
+.group-label {
+  font-size: 13px;
+  font-weight: 800;
+  padding: 6px 12px;
+  border-radius: 4px;
+  margin-bottom: 15px;
+  display: inline-block;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* Изменили названия и цвета согласно логике Игроки/NPC */
+.player-label-bg { background: #e3f2fd; color: #1976d2; border: 1px solid #bbdefb; }
+.npc-label-bg { background: #f5f5f5; color: #616161; border: 1px solid #e0e0e0; }
+
+/* --- СЕТКА КАРТОЧЕК --- */
+.template-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); 
+  gap: 15px;
+}
+
+.template-card {
+  background: white;
+  padding: 12px 15px;
+  border-radius: 10px;
+  border-left: 5px solid #3498db; 
+  box-shadow: 0 2px 5px rgba(0,0,0,0.08);
+}
+
+.template-card.npc {
+  border-left-color: #95a5a6; /* Нейтральный цвет для NPC */
+}
+
+/* Внутренняя структура карточки для вертикальных кнопок */
+.tpl-card-main-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.tpl-info {
+  flex: 1;
+}
+
+.tpl-card-stats {
+  font-size: 13px;
+  color: #7f8c8d;
+  margin-top: 4px;
+}
+
+/* Колонка кнопок справа */
+.tpl-actions-column {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 110px;
+}
+
+.row-edit-btn, .row-del-btn {
+  width: 100%;
+  padding: 6px 4px;
+  font-size: 10px;
+  font-weight: bold;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+.row-edit-btn { background: #f1c40f; color: #333; }
+.row-del-btn { background: #e74c3c; color: white; }
+
+/* --- СПИСОК БОЯ --- */
+.entity-card { 
+  display: flex; 
+  justify-content: space-between; 
+  align-items: center;
+  padding: 15px; 
+  background: white;
+  border: 1px solid #eee; 
+  margin-bottom: 10px; 
+  border-radius: 8px;
+}
+
+.npc-label { color: #616161; font-weight: bold; }
+.player-label { color: #1976d2; font-weight: bold; }
+
+button { cursor: pointer; border: none; border-radius: 6px; transition: all 0.2s; }
+button:active { transform: translateY(1px); }
+
+.gen-btn { 
+  background: #27ae60; color: white; width: 100%; 
+  margin-top: 20px; padding: 15px; font-weight: bold; 
+}

@@ -17,8 +17,6 @@ function App() {
   const [mod, setMod] = useState('0');
   const [isNpc, setIsNpc] = useState(true);
   const [editingId, setEditingId] = useState(null);
-
-  // НОВОЕ: Состояние для поиска
   const [searchQuery, setSearchQuery] = useState('');
 
   const refreshAllData = useCallback(async () => {
@@ -108,9 +106,25 @@ function App() {
   };
 
   const addFromTemplate = (tpl) => {
+    // 1. Ограничение для игроков (не больше одного)
+    if (tpl.type === 'player' && entities.some(e => e.name === tpl.name)) {
+      alert(`Игрок ${tpl.name} уже добавлен в битву!`);
+      return;
+    }
+
+    // 2. Логика нумерации для NPC
+    let finalName = tpl.name;
+    if (tpl.type === 'npc') {
+      // Считаем, сколько сущностей имеют имя, начинающееся с имени шаблона
+      const count = entities.filter(e => e.name.startsWith(tpl.name)).length;
+      if (count > 0) {
+        finalName = `${tpl.name} ${count + 1}`;
+      }
+    }
+
     setEntities(prev => [...prev, {
       id: Math.random().toString(36).substr(2, 9),
-      name: tpl.name,
+      name: finalName,
       type: tpl.type,
       currentHp: tpl.base_hp,
       initMod: tpl.init_mod,
@@ -136,7 +150,6 @@ function App() {
     </div>
   );
 
-  // НОВОЕ: Фильтрация шаблонов на основе поиска
   const filteredTemplates = templates.filter(t => 
     t.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -153,46 +166,70 @@ function App() {
 
       {activeTab === 'combat' ? (
         <div className="combat-screen">
-          <div className="setup-section" style={{display: 'block'}}>
-            <h4>Добавить участника:</h4>
-            <div style={{display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '10px'}}>
-              {templates.sort((a,b) => a.name.localeCompare(b.name)).map(t => (
-                <button key={t.id} onClick={() => addFromTemplate(t)} className="add-tpl-btn">+{t.name}</button>
-              ))}
+          <div className="setup-section">
+            <h4 className="setup-title">Добавить в бой:</h4>
+            
+            <div className="quick-add-grid">
+              <div className="add-group">
+                <span className="add-group-label players">Игроки</span>
+                <div className="add-buttons-container">
+                  {templates.filter(t => t.type === 'player').sort((a,b) => a.name.localeCompare(b.name)).map(t => (
+                    <button key={t.id} onClick={() => addFromTemplate(t)} className="btn-add-player">+{t.name}</button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="add-group">
+                <span className="add-group-label npcs">NPC</span>
+                <div className="add-buttons-container">
+                  {templates.filter(t => t.type === 'npc').sort((a,b) => a.name.localeCompare(b.name)).map(t => (
+                    <button key={t.id} onClick={() => addFromTemplate(t)} className="btn-add-npc">+{t.name}</button>
+                  ))}
+                </div>
+              </div>
             </div>
-            <div style={{marginTop: '15px', display: 'flex', gap: '10px'}}>
+
+            <div className="setup-actions">
               <button onClick={async () => {
                 const summary = entities.map(e => `${e.name}`).join(', ');
                 await archiveBattle(`Бой завершен: ${summary}`);
                 setEntities([]);
                 refreshAllData();
-              }} style={{background: '#27ae60', color: 'white'}}>Завершить</button>
-              <button onClick={() => setEntities([])} style={{background: '#e74c3c', color: 'white'}}>Очистить</button>
+              }} className="btn-finish">Завершить бой</button>
+              <button onClick={() => setEntities([])} className="btn-clear">Очистить список</button>
             </div>
           </div>
 
           <div className="battle-list">
             {entities.map((ent, idx) => (
-              <div key={ent.id} className={`entity-card ${ent.type === 'npc' && ent.currentHp <= 0 ? 'dead' : ''}`}>
+              <div key={ent.id} className={`entity-card ${ent.type === 'npc' && ent.currentHp <= 0 ? 'dead' : ''} ${ent.isCrossed ? 'crossed-out' : ''}`}>
                 <div>
                   <span className={ent.type === 'npc' ? 'npc-label' : 'player-label'}>{ent.name}</span>
-                  <div style={{fontSize: '0.8em'}}>Инит: <strong>{ent.total || '?'}</strong></div>
+                  {/* Изменено: Инит -> Инициатива */}
+                  <div style={{fontSize: '0.8em'}}>Инициатива: <strong>{ent.total || '?'}</strong></div>
                 </div>
+                
                 <div style={{display: 'flex', gap: '10px', alignItems: 'center'}}>
                   {ent.type === 'npc' && (
                     <div className="hp-section">
-                      HP: <strong>{ent.currentHp}</strong>
-                      <input type="number" id={`hp-v-${ent.id}`} style={{width: '40px', marginLeft: '5px'}} defaultValue="1" />
-                      <button onClick={() => {
-                        const val = parseInt(document.getElementById(`hp-v-${ent.id}`).value) || 0;
-                        const newE = [...entities];
-                        newE[idx].currentHp -= val;
-                        setEntities(newE);
-                      }}>-</button>
+                      {ent.total > 0 && (
+                        <>
+                          HP: <strong>{ent.currentHp}</strong>
+                          {/* Инпут только для вычитания (положительные числа) */}
+                          <input type="number" id={`hp-v-${ent.id}`} style={{width: '40px', marginLeft: '5px'}} defaultValue="1" min="1" />
+                          <button onClick={() => {
+                            const val = Math.abs(parseInt(document.getElementById(`hp-v-${ent.id}`).value)) || 0;
+                            const newE = [...entities];
+                            newE[idx].currentHp -= val; // Только вычитание
+                            setEntities(newE);
+                          }}>-</button>
+                        </>
+                      )}
                     </div>
                   )}
+                  
                   {ent.type === 'player' && (
-                    <input type="number" placeholder="Инит" style={{width: '50px'}} value={ent.total || ''}
+                    <input type="number" placeholder="Инициатива" style={{width: '60px'}} value={ent.total || ''}
                       onChange={e => {
                         const newE = [...entities];
                         newE[idx].total = parseInt(e.target.value) || 0;
@@ -200,6 +237,19 @@ function App() {
                       }} 
                     />
                   )}
+
+                  {/* Кнопка смерти/зачеркивания */}
+                  <button 
+                    onClick={() => {
+                      const newE = [...entities];
+                      newE[idx].isCrossed = !newE[idx].isCrossed;
+                      setEntities(newE);
+                    }}
+                    className={`death-btn ${ent.isCrossed ? 'active' : ''}`}
+                  >
+                    💀
+                  </button>
+
                   <button onClick={() => setEntities(entities.filter(e => e.id !== ent.id))}>❌</button>
                 </div>
               </div>
@@ -263,7 +313,6 @@ function App() {
             </div>
           </div>
 
-          {/* НОВОЕ: Блок поиска */}
           <div className="search-container">
             <div className="search-wrapper">
               <span className="search-icon">🔍</span>
@@ -284,20 +333,14 @@ function App() {
             <div className="library-group">
               <h3 className="group-label player-label-bg">Игроки</h3>
               <div className="template-grid">
-                {filteredTemplates
-                  .filter(t => t.type === 'player')
-                  .sort((a, b) => a.name.localeCompare(b.name))
-                  .map(tpl => renderTemplateCard(tpl))}
+                {filteredTemplates.filter(t => t.type === 'player').sort((a, b) => a.name.localeCompare(b.name)).map(tpl => renderTemplateCard(tpl))}
               </div>
             </div>
 
             <div className="library-group">
               <h3 className="group-label npc-label-bg">NPC</h3>
               <div className="template-grid">
-                {filteredTemplates
-                  .filter(t => t.type === 'npc')
-                  .sort((a, b) => a.name.localeCompare(b.name))
-                  .map(tpl => renderTemplateCard(tpl))}
+                {filteredTemplates.filter(t => t.type === 'npc').sort((a, b) => a.name.localeCompare(b.name)).map(tpl => renderTemplateCard(tpl))}
               </div>
             </div>
           </div>

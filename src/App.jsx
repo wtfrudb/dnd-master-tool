@@ -395,7 +395,7 @@ function App() {
                         <div className="tie-actions">
                           {ent.type === 'npc' ? (
                             <button 
-                              style={{ padding: '4px 10px', fontSize: '0.8em', cursor: 'pointer' }}
+                              className="tie-dice-btn"
                               onClick={() => {
                                 const newVal = Math.floor(Math.random() * 20) + 1;
                                 setTiedEntities(prev => prev.map(p => p.id === ent.id ? {...p, tieBreaker: newVal} : p));
@@ -404,16 +404,20 @@ function App() {
                               {ent.tieBreaker > 0 ? `🎲 ${ent.tieBreaker}` : 'Бросить'}
                             </button>
                           ) : (
-                            <input 
-                              type="number" 
-                              placeholder="d20"
-                              style={{ width: '45px', padding: '3px', textAlign: 'center' }}
-                              value={ent.tieBreaker || ''}
-                              onChange={(e) => {
-                                const val = parseInt(e.target.value) || 0;
-                                setTiedEntities(prev => prev.map(p => p.id === ent.id ? {...p, tieBreaker: val} : p));
-                              }}
-                            />
+                            <div className="tie-input-wrapper">
+                              <span className="tie-input-icon">🎲</span>
+                              <input 
+                                type="number" 
+                                placeholder="d20"
+                                className="tie-d20-input"
+                                value={ent.tieBreaker || ''}
+                                onChange={(e) => {
+                                  const val = parseInt(e.target.value) || 0;
+                                  setTiedEntities(prev => prev.map(p => p.id === ent.id ? {...p, tieBreaker: val} : p));
+                                }}
+                                onFocus={(e) => e.target.select()} // Удобно: сразу выделяет текст при клике
+                              />
+                            </div>
                           )}
                         </div>
                       </div>
@@ -453,28 +457,43 @@ function App() {
 
               <button 
                 className="gen-btn" 
-                style={{ marginTop: '15px', width: '100%', padding: '10px', fontSize: '0.85em' }} 
+                // Блокируем кнопку, если есть персонажи с tieBreaker равным 0 или пустым
+                disabled={tiedEntities.some(ent => !ent.tieBreaker || ent.tieBreaker === 0)}
+                style={{ 
+                  marginTop: '15px', 
+                  width: '100%', 
+                  padding: '10px', 
+                  fontSize: '0.85em',
+                  // Визуальные стили для заблокированного состояния
+                  backgroundColor: tiedEntities.some(ent => !ent.tieBreaker || ent.tieBreaker === 0) ? '#ccc' : '#e67e22',
+                  cursor: tiedEntities.some(ent => !ent.tieBreaker || ent.tieBreaker === 0) ? 'not-allowed' : 'pointer',
+                  border: 'none',
+                  color: 'white',
+                  borderRadius: '4px',
+                  transition: 'background-color 0.3s'
+                }} 
                 onClick={() => {
                   const updatedAll = entities.map(ent => {
                     const tied = tiedEntities.find(t => t.id === ent.id);
                     return tied ? { ...ent, tieBreaker: tied.tieBreaker } : ent;
                   });
 
-                  // Проверка на повторные ничьи
+                  // Проверяем, есть ли повторные ничьи среди тех, кто сейчас перебрасывал
                   const stillTied = updatedAll.filter(e1 => 
                     updatedAll.some(e2 => 
                       e1.id !== e2.id && 
                       e1.total === e2.total && 
-                      e1.tieBreaker === e2.tieBreaker &&
-                      e1.tieBreaker !== 0
+                      e1.tieBreaker === e2.tieBreaker
                     )
                   );
 
                   if (stillTied.length > 0) {
-                    alert("Снова ничья! Перебросьте для тех, у кого совпали дополнительные значения.");
+                    alert("Снова ничья! Нужно перебросить еще раз для тех, кто совпал.");
+                    // Оставляем в окне только тех, кто всё еще в ничьей, и обнуляем им бросок
                     setTiedEntities(stillTied.map(ent => ({ ...ent, tieBreaker: 0 })));
                     setEntities(updatedAll);
                   } else {
+                    // Все споры разрешены
                     const finalSorted = [...updatedAll].sort((a, b) => {
                       if (b.total !== a.total) return b.total - a.total;
                       return b.tieBreaker - a.tieBreaker;
@@ -484,7 +503,10 @@ function App() {
                   }
                 }}
               >
-                Принять порядок
+                {/* Меняем текст кнопки в зависимости от состояния */}
+                {tiedEntities.some(ent => !ent.tieBreaker || ent.tieBreaker === 0) 
+                  ? "Заполните все броски" 
+                  : "Принять порядок"}
               </button>
             </div>
 
